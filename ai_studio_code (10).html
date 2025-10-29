@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Tab</title>
+    <style>
+        :root {
+            --search-box-height: 96px;
+            --waffle-size: 96px;
+            --trigger-zone-width: 60px;
+            --search-box-radius: 35px;
+            --gap-width: 15px;
+            --border-color: #d1d5db;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --shadow-focus-color: rgba(0, 0, 0, 0.15);
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            background-color: #ffffff;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #datetime-container {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-weight: bold;
+            font-size: 17px;
+            color: #4b5563;
+            white-space: nowrap;
+        }
+
+        .search-wrapper {
+            width: 90vw;
+            max-width: 720px;
+        }
+
+        #search-form {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            position: relative;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: var(--search-box-height);
+            background-color: #ffffff;
+            border: 0.5px solid var(--border-color);
+            border-radius: var(--search-box-radius);
+            box-shadow: 0 4px 14px var(--shadow-color);
+            transition: width var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        #search-form.waffle-triggered .search-container {
+            width: calc(100% - var(--waffle-size) - var(--gap-width));
+        }
+
+        .search-container:focus-within {
+            box-shadow: 0 6px 20px var(--shadow-focus-color);
+        }
+
+        #search-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            padding: 0 25px;
+            font-size: 20px;
+            background-color: transparent;
+            border-radius: var(--search-box-radius);
+        }
+
+        #search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        #waffle-island {
+            width: var(--waffle-size);
+            height: var(--search-box-height);
+            background-color: #ffffff;
+            border: 0.5px solid var(--border-color);
+            border-radius: 50%;
+            box-shadow: 0 4px 14px var(--shadow-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-left: var(--gap-width);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity var(--transition-speed) ease, visibility var(--transition-speed) ease;
+        }
+
+        #search-form.waffle-triggered #waffle-island {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .waffle-icon {
+            display: grid;
+            grid-template-columns: repeat(3, 8px);
+            grid-gap: 4px;
+        }
+
+        .waffle-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #5f6368;
+            border-radius: 50%;
+        }
+
+        #autocomplete-menu {
+            position: absolute;
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 33.33%;
+            top: calc(100% + 8px);
+            left: 0;
+            box-shadow: 0 4px 14px var(--shadow-color);
+            display: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .autocomplete-item.selected {
+            background-color: #f3f4f6;
+        }
+
+        .autocomplete-item img {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+        }
+        
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        /* --- Styles for Smaller Waffle Menu --- */
+        #modal {
+            background-color: #ffffff;
+            padding: 20px; /* Was 24px */
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            width: 90vw;
+            max-width: 420px; /* Was 480px */
+        }
+
+        #modal-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* Was 100px */
+            gap: 15px; /* Was 20px */
+        }
+
+        .modal-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #374151;
+            padding: 12px; /* Was 15px */
+            border-radius: 12px;
+            transition: background-color 0.2s ease;
+        }
+
+        .modal-item:hover { background-color: #f3f4f6; }
+        
+        .modal-item img {
+            width: 36px; /* Was 48px */
+            height: 36px; /* Was 48px */
+            margin-bottom: 10px; /* Was 12px */
+        }
+        
+        .modal-item span {
+            font-size: 13px; /* Was 14px */
+        }
+        
+        .hidden-submit { position: absolute; left: -9999px; width: 1px; height: 1px; }
+    </style>
+</head>
+<body>
+
+    <div id="datetime-container"></div>
+
+    <div class="search-wrapper">
+        <form id="search-form" action="https://www.google.com/search" method="GET" autocomplete="off">
+            <div class="search-container">
+                <input type="text" id="search-input" name="q" placeholder="Search the web">
+                <div id="autocomplete-menu"></div>
+            </div>
+            <div id="waffle-island">
+                <div class="waffle-icon">
+                    <div class="waffle-dot"></div><div class="waffle-dot"></div><div class="waffle-dot"></div>
+                    <div class="waffle-dot"></div><div class="waffle-dot"></div><div class="waffle-dot"></div>
+                    <div class="waffle-dot"></div><div class="waffle-dot"></div><div class="waffle-dot"></div>
+                </div>
+            </div>
+            <input type="submit" class="hidden-submit">
+        </form>
+    </div>
+
+    <div id="modal-overlay">
+        <div id="modal">
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchForm = document.getElementById('search-form');
+            const searchInput = document.getElementById('search-input');
+            const waffleIsland = document.getElementById('waffle-island');
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalContent = document.getElementById('modal-content');
+            const autocompleteMenu = document.getElementById('autocomplete-menu');
+            const dateTimeContainer = document.getElementById('datetime-container');
+
+            const TRIGGER_ZONE_WIDTH = 60;
+            let selectedAutocompleteIndex = 0;
+
+            const SITES = [
+                { name: 'Gmail', url: 'https://mail.google.com', favicon: 'https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico' },
+                { name: 'YouTube', url: 'https://www.youtube.com', favicon: 'https://www.google.com/s2/favicons?sz=128&domain=www.youtube.com' },
+                { name: 'Church', url: 'https://www.churchofjesuschrist.org/?lang=eng', favicon: 'https://www.google.com/s2/favicons?sz=128&domain=www.churchofjesuschrist.org' },
+                /* --- Corrected Google Drive Favicon URL --- */
+                { name: 'Drive', url: 'https://drive.google.com/drive/home', favicon: 'https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png' },
+                { name: 'Sight Reading Factory', url: 'https://www.sightreadingfactory.com/sight-reading', favicon: 'https://www.google.com/s2/favicons?sz=128&domain=www.sightreadingfactory.com' }
+            ];
+            
+            function updateDateTime() {
+                const now = new Date();
+                const options = { weekday: 'long', month: 'long', day: 'numeric' };
+                const dateString = now.toLocaleDateString(undefined, options);
+                const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                dateTimeContainer.textContent = `${dateString} | ${timeString}`;
+            }
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+
+            searchForm.addEventListener('mousemove', (e) => {
+                const formRect = searchForm.getBoundingClientRect();
+                const mouseX = e.clientX - formRect.left;
+                if (mouseX >= formRect.width - TRIGGER_ZONE_WIDTH) {
+                    searchForm.classList.add('waffle-triggered');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!waffleIsland.contains(e.target)) searchForm.classList.remove('waffle-triggered');
+                hideAutocomplete();
+            });
+            
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
+
+            searchInput.addEventListener('input', () => {
+                searchForm.classList.remove('waffle-triggered');
+                handleAutocomplete();
+            });
+
+            const handleAutocomplete = () => {
+                const value = searchInput.value;
+                if (value.startsWith('/')) {
+                    const query = value.substring(1).toLowerCase().trim();
+                    if (!query) {
+                        hideAutocomplete();
+                        return;
+                    }
+                    const filteredSites = SITES.filter(site => site.name.toLowerCase().includes(query));
+                    renderAutocomplete(filteredSites);
+                } else {
+                    hideAutocomplete();
+                }
+            };
+
+            const renderAutocomplete = (sites) => {
+                if (sites.length > 0) {
+                    autocompleteMenu.innerHTML = sites.map(site => `
+                        <div class="autocomplete-item" data-url="${site.url}">
+                            <img src="${site.favicon}" alt="${site.name} Favicon">
+                            <span>${site.name}</span>
+                        </div>
+                    `).join('');
+                    
+                    autocompleteMenu.querySelectorAll('.autocomplete-item').forEach(item => {
+                        item.addEventListener('mousedown', (e) => window.location.href = e.currentTarget.dataset.url);
+                    });
+                    
+                    selectedAutocompleteIndex = 0;
+                    updateAutocompleteSelection();
+                    autocompleteMenu.style.display = 'block';
+                } else {
+                    hideAutocomplete();
+                }
+            };
+
+            const hideAutocomplete = () => {
+                autocompleteMenu.style.display = 'none';
+                selectedAutocompleteIndex = -1;
+            };
+
+            const updateAutocompleteSelection = () => {
+                const items = autocompleteMenu.querySelectorAll('.autocomplete-item');
+                items.forEach((item, index) => {
+                    item.classList.toggle('selected', index === selectedAutocompleteIndex);
+                });
+            };
+            
+            function isUrl(text) {
+                return text.includes('.') && !text.includes(' ');
+            }
+
+            searchInput.addEventListener('keydown', (e) => {
+                const isAutocompleteVisible = autocompleteMenu.style.display === 'block';
+
+                if (e.key === 'Enter') {
+                    const query = searchInput.value.trim();
+                    if (isAutocompleteVisible && selectedAutocompleteIndex > -1) {
+                        e.preventDefault();
+                        const items = autocompleteMenu.querySelectorAll('.autocomplete-item');
+                        window.location.href = items[selectedAutocompleteIndex].dataset.url;
+                        return;
+                    }
+                    if (isUrl(query)) {
+                        e.preventDefault();
+                        window.location.href = !/^https?:\/\//i.test(query) ? 'https://' + query : query;
+                        return;
+                    }
+                    return;
+                }
+
+                if (!isAutocompleteVisible) return;
+                
+                const items = autocompleteMenu.querySelectorAll('.autocomplete-item');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedAutocompleteIndex = (selectedAutocompleteIndex + 1) % items.length;
+                    updateAutocompleteSelection();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedAutocompleteIndex = (selectedAutocompleteIndex - 1 + items.length) % items.length;
+                    updateAutocompleteSelection();
+                }
+            });
+
+            waffleIsland.addEventListener('click', (e) => {
+                e.stopPropagation();
+                modalContent.innerHTML = SITES.map(site => `
+                    <a href="${site.url}" class="modal-item" target="_blank" rel="noopener noreferrer">
+                        <img src="${site.favicon}" alt="${site.name} Favicon">
+                        <span>${site.name}</span>
+                    </a>
+                `).join('');
+                modalOverlay.style.display = 'flex';
+            });
+
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) modalOverlay.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>```
